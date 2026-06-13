@@ -1,0 +1,23 @@
+# Heroku container deploy for the paisa backend.
+#
+# Heroku builds the image from ./Dockerfile and runs its CMD as the `web`
+# process. The Dockerfile's CMD already binds uvicorn to Heroku's dynamic
+# $PORT, so no `run:` override is needed here.
+#
+# Deploy (from the monorepo root, backend lives in ./backend):
+#   heroku create paisa-api
+#   heroku stack:set container -a paisa-api
+#   heroku config:set -a paisa-api \
+#       DATABASE_URL="<neon-DIRECT-connection-string>" \  # not the -pooler host (asyncpg runs its own pool)
+#       GLM_API_KEY="..." \
+#       VAPID_PRIVATE_KEY="..." VAPID_PUBLIC_KEY="..." \
+#       VAPID_EMAIL="tejas@tejasgarg.in" \
+#       CORS_ORIGINS="https://<your-vercel-app>.vercel.app"
+#   git subtree push --prefix backend heroku master
+#   heroku ps:type web=basic -a paisa-api   # Basic dyno: never sleeps (~$7/mo)
+#
+# Keep web dynos at 1 — the in-process APScheduler would otherwise fire the
+# daily nudge once per dyno (duplicate notifications).
+build:
+  docker:
+    web: Dockerfile

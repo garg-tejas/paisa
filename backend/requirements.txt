@@ -1,0 +1,15 @@
+# paisa backend — FastAPI + asyncpg + parsing + push
+fastapi>=0.115,<0.116
+uvicorn[standard]>=0.30,<0.35
+asyncpg>=0.29,<0.31
+pydantic>=2.7,<3
+pydantic-settings>=2.3,<3
+python-multipart>=0.0.9
+httpx>=0.27,<0.29
+pdfplumber>=0.11,<0.12
+pywebpush>=2.0,<3
+apscheduler>=3.10,<4
+cryptography>=42
+# zoneinfo's data source: python:slim ships no system tzdb, so ZoneInfo(
+# "Asia/Kolkata") in scheduler.py would raise ZoneInfoNotFoundError without this.
+tzdata>=2024.1

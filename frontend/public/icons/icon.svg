@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="paisa">
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#D6FB51" stop-opacity="0.30" />
+      <stop offset="55%" stop-color="#D6FB51" stop-opacity="0.05" />
+      <stop offset="100%" stop-color="#0B0B0D" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base -->
+  <rect width="512" height="512" rx="116" fill="#0B0B0D" />
+  <rect width="512" height="512" rx="116" fill="url(#glow)" />
+  <rect x="6" y="6" width="500" height="500" rx="110" fill="none" stroke="#2A2A30" stroke-width="2" />
+
+  <!-- Rupee mark (stroke-built so it renders without any font) -->
+  <g stroke="#D6FB51" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M188 168 H330" />
+    <path d="M188 224 H330" />
+    <path d="M188 168 C268 168 290 280 200 280 H196" />
+    <path d="M214 280 L322 392" />
+  </g>
+</svg>

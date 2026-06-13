@@ -1,0 +1,183 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   MIDNIGHT LEDGER — design tokens
+   ============================================================ */
+:root {
+  --bg: #0b0b0d;
+  --surface: #141417;
+  --surface-2: #1c1c21;
+  --border: #2a2a30;
+  --text: #f4f1ea;
+  --text-dim: #8e8a82;
+  --primary: #d6fb51;
+  --primary-ink: #0b0b0d;
+  --warn: #ffb020;
+  --danger: #ff5c5c;
+  --positive: #5ce6a0;
+  --radius: 18px;
+
+  /* font vars are injected by next/font in layout.tsx; fallbacks below */
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* {
+  border-color: var(--border);
+}
+
+html {
+  background-color: var(--bg);
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01";
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+/* Big tabular mono numbers everywhere amounts appear */
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-ink);
+}
+
+/* Hide scrollbars but keep scrolling (mobile-first chrome) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: inherit;
+}
+
+/* Focus ring — chartreuse, subtle */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================================================
+   Atmospheric background: top radial primary glow + film grain
+   Used by AppShell via .ml-bg / .ml-grain
+   ============================================================ */
+.ml-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(
+      120% 60% at 50% -10%,
+      rgba(214, 251, 81, 0.16) 0%,
+      rgba(214, 251, 81, 0.05) 28%,
+      rgba(11, 11, 13, 0) 62%
+    ),
+    var(--bg);
+  pointer-events: none;
+}
+
+.ml-grain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.05;
+  pointer-events: none;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   Hairline helpers
+   ============================================================ */
+.hairline {
+  border: 1px solid var(--border);
+}
+.hairline-t {
+  border-top: 1px solid var(--border);
+}
+.hairline-b {
+  border-bottom: 1px solid var(--border);
+}
+
+/* Single-element reveal. Pair with an inline `animationDelay` for stagger. */
+.reveal {
+  animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Staggered page-load reveal: parent gets .stagger, children animate
+   with incremental delays. */
+.stagger > * {
+  animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.08s; }
+.stagger > *:nth-child(3) { animation-delay: 0.14s; }
+.stagger > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger > *:nth-child(5) { animation-delay: 0.26s; }
+.stagger > *:nth-child(6) { animation-delay: 0.32s; }
+.stagger > *:nth-child(7) { animation-delay: 0.38s; }
+.stagger > *:nth-child(8) { animation-delay: 0.44s; }
+.stagger > *:nth-child(9) { animation-delay: 0.5s; }
+.stagger > *:nth-child(10) { animation-delay: 0.56s; }
+
+@keyframes fade-up {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   Safe-area utilities for fixed bottom nav / sheets
+   ============================================================ */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
