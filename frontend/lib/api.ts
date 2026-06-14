@@ -103,11 +103,21 @@ function fileForm(file: File): FormData {
   return fd;
 }
 
+// Both parse routes return a job_id immediately (Heroku has a 30s hard timeout;
+// actual OCR runs in a background task). Poll getParseJob() until status != "processing".
 export const parsePdf = (file: File) =>
-  request<ParseResult>("/parse/pdf", { method: "POST", body: fileForm(file) });
+  request<{ job_id: string }>("/parse/pdf", { method: "POST", body: fileForm(file) });
 
 export const parseImage = (file: File) =>
-  request<ParseResult>("/parse/image", { method: "POST", body: fileForm(file) });
+  request<{ job_id: string }>("/parse/image", { method: "POST", body: fileForm(file) });
+
+export type ParseJobStatus =
+  | { status: "processing" }
+  | { status: "done"; result: ParseResult }
+  | { status: "error"; detail: string };
+
+export const getParseJob = (jobId: string) =>
+  request<ParseJobStatus>(`/parse/job/${jobId}`);
 
 // ---------------------------------------------------------------------------
 // Orders

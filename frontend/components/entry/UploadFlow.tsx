@@ -1,4 +1,3 @@
-// frontend/components/entry/UploadFlow.tsx
 "use client";
 
 import { useRef, useState } from "react";
@@ -7,12 +6,14 @@ import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { useToast } from "@/components/ui/Toast";
 import { CameraIcon, UploadIcon } from "@/components/Icons";
-import { ApiError, createOrder, parseImage, parsePdf } from "@/lib/api";
+import { ApiError, createOrder, getParseJob, parseImage, parsePdf } from "@/lib/api";
 import type { ParsedOrder, ParseResult } from "@/lib/types";
 
 type Stage = "pick" | "parsing" | "review";
 
-/** Upload an image or PDF receipt → parse → review editable items → save. */
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** Upload an image or PDF receipt → parse (async job) → review editable items → save. */
 export function UploadFlow({ onSaved }: { onSaved: () => void }) {
   const toast = useToast();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -20,18 +21,39 @@ export function UploadFlow({ onSaved }: { onSaved: () => void }) {
   const [result, setResult] = useState<ParseResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0); // seconds, shown in the loading UI
 
   async function onFile(file: File | undefined) {
     if (!file) return;
     setError(null);
+    setElapsed(0);
     setStage("parsing");
+
+    const ticker = setInterval(() => setElapsed((s) => s + 1), 1000);
+
     try {
       const isPdf =
         file.type === "application/pdf" ||
         file.name.toLowerCase().endsWith(".pdf");
-      const parsed = isPdf ? await parsePdf(file) : await parseImage(file);
-      setResult(parsed);
-      setStage("review");
+
+      const { job_id } = isPdf ? await parsePdf(file) : await parseImage(file);
+
+      // Poll until the background task finishes (max 2 minutes).
+      const deadline = Date.now() + 120_000;
+      while (Date.now() < deadline) {
+        await sleep(2500);
+        const job = await getParseJob(job_id);
+        if (job.status === "done") {
+          setResult(job.result);
+          setStage("review");
+          return;
+        }
+        if (job.status === "error") {
+          throw new Error(job.detail || "Parsing failed.");
+        }
+        // status === "processing" → keep polling
+      }
+      throw new Error("Parsing timed out after 2 minutes. Try again.");
     } catch (e) {
       const msg =
         e instanceof ApiError && e.status === 503
@@ -42,13 +64,14 @@ export function UploadFlow({ onSaved }: { onSaved: () => void }) {
       setError(msg);
       setStage("pick");
       toast(msg, "error");
+    } finally {
+      clearInterval(ticker);
     }
   }
 
   async function confirm(order: ParsedOrder) {
     setSaving(true);
     try {
-      // Record the true origin (pdf | image) rather than the schema default.
       await createOrder({ ...order, source: result?.source ?? order.source });
       toast("Saved", "success");
       onSaved();
@@ -62,8 +85,16 @@ export function UploadFlow({ onSaved }: { onSaved: () => void }) {
   if (stage === "parsing") {
     return (
       <div className="flex flex-col gap-3 py-2">
-        <p className="text-center text-sm text-[var(--text-dim)]">
+        <p className="text-center text-sm font-medium text-[var(--text)]">
           Reading your receipt…
+        </p>
+        <p className="text-center text-xs text-[var(--text-dim)]">
+          {elapsed < 10
+            ? "Uploading and running OCR"
+            : elapsed < 40
+              ? "Extracting items and prices"
+              : "Almost there…"}{" "}
+          · {elapsed}s
         </p>
         <Skeleton className="h-16 w-full" />
         <Skeleton className="h-16 w-full" />
