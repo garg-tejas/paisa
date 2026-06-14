@@ -40,8 +40,11 @@ export default function HomePage() {
       }
     }
     load();
+    function onSaved() { void load(); }
+    window.addEventListener("paisa:saved", onSaved);
     return () => {
       cancelled = true;
+      window.removeEventListener("paisa:saved", onSaved);
     };
   }, []);
 

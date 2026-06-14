@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { inr } from "@/lib/format";
-import { formatShortDate } from "@/lib/format";
-import { ReceiptIcon, ChevronIcon } from "@/components/Icons";
+import { formatShortDate, inr } from "@/lib/format";
+import { ChevronIcon, ReceiptIcon } from "@/components/Icons";
 import type { OrderListItem } from "@/lib/types";
 
 const PLATFORM_TINT: Record<string, string> = {
@@ -24,9 +23,12 @@ export default function RecentEntries({ orders }: { orders: OrderListItem[] }) {
       className="reveal rounded-[var(--radius)] border border-[var(--border)] bg-[var(--surface)] p-5"
       style={{ animationDelay: "200ms" }}
     >
-      <h2 className="mb-4 font-display text-lg font-semibold text-[var(--text)]">
-        Recent
-      </h2>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="font-display text-lg font-semibold text-[var(--text)]">Recent</h2>
+        <Link href="/history" className="text-xs text-[var(--primary)]">
+          See all →
+        </Link>
+      </div>
 
       {sorted.length === 0 ? (
         <p className="py-6 text-center text-sm text-[var(--text-dim)]">

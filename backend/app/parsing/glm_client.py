@@ -16,6 +16,7 @@ import re
 from typing import Any
 
 import httpx
+from openai import AsyncOpenAI
 
 from app.config import settings
 
@@ -26,6 +27,10 @@ MAX_IMAGE_BYTES = 10 * 1024 * 1024
 MAX_PDF_BYTES = 50 * 1024 * 1024
 
 BASE_URL = "https://api.z.ai/api/paas/v4"
+# OpenAI-compatible endpoint (trailing slash per Z.ai docs) used for structuring.
+OPENAI_BASE_URL = "https://api.z.ai/api/paas/v4/"
+# Text model that coerces raw receipt text into the canonical JSON schema.
+STRUCTURE_MODEL = "glm-4.7-flash"
 _TIMEOUT = httpx.Timeout(120.0, connect=15.0)
 
 # The 8 fixed categories (kept in sync with the canonical contract).
@@ -161,28 +166,18 @@ async def structure_receipt(raw_text: str) -> tuple[dict, float]:
     """
     if not raw_text or not raw_text.strip():
         return _empty_order(), 0.0
+    if not settings.GLM_API_KEY:
+        # No key -> caller (pdf_pipeline) degrades to the deterministic parser.
+        return _empty_order(), 0.0
 
-    payload: dict[str, Any] = {
-        "model": "glm-4.7-flash",
-        "messages": [
-            {"role": "system", "content": _STRUCTURE_SYSTEM_PROMPT},
-            {"role": "user", "content": raw_text},
-        ],
-        "temperature": 0,
-        # response_format json_object if the API supports it; harmless if ignored.
-        "response_format": {"type": "json_object"},
-    }
+    messages = [
+        {"role": "system", "content": _STRUCTURE_SYSTEM_PROMPT},
+        {"role": "user", "content": raw_text},
+    ]
 
-    content = ""
     try:
-        async with httpx.AsyncClient(base_url=BASE_URL, timeout=_TIMEOUT) as client:
-            resp = await client.post(
-                "/chat/completions", headers=_auth_headers(), json=payload
-            )
-            resp.raise_for_status()
-            data = resp.json()
-        content = _chat_content(data)
-    except httpx.HTTPError:
+        content = await _chat_complete(messages)
+    except Exception:
         # Network / API failure -> degrade gracefully, caller can flag review.
         return _empty_order(), 0.0
 
@@ -195,21 +190,31 @@ async def structure_receipt(raw_text: str) -> tuple[dict, float]:
     return order, confidence
 
 
-def _chat_content(data: Any) -> str:
-    if not isinstance(data, dict):
-        return str(data)
-    choices = data.get("choices")
-    if isinstance(choices, list) and choices:
-        msg = choices[0].get("message") or {}
-        if isinstance(msg, dict):
-            content = msg.get("content")
-            if isinstance(content, str):
-                return content
-        # Some APIs put the text directly on the choice.
-        text = choices[0].get("text")
-        if isinstance(text, str):
-            return text
-    return ""
+async def _chat_complete(messages: list[dict[str, str]]) -> str:
+    """Call glm-4.7-flash via the OpenAI-compatible Z.ai endpoint; return the text.
+
+    temperature=0.1 (the OpenAI path rejects 0). We first request JSON mode and
+    retry once without it, since `response_format` is undocumented for this path.
+    """
+    client = AsyncOpenAI(
+        api_key=settings.GLM_API_KEY,
+        base_url=OPENAI_BASE_URL,
+        timeout=120.0,
+    )
+    kwargs: dict[str, Any] = {
+        "model": STRUCTURE_MODEL,
+        "messages": messages,
+        "temperature": 0.1,
+    }
+    try:
+        resp = await client.chat.completions.create(
+            response_format={"type": "json_object"}, **kwargs
+        )
+    except Exception:
+        # Some deployments reject response_format — retry plain (strict prompt
+        # + _safe_json still recover the JSON object).
+        resp = await client.chat.completions.create(**kwargs)
+    return resp.choices[0].message.content or ""
 
 
 def _safe_json(content: str) -> dict | None:

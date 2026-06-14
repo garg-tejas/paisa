@@ -1,8 +1,10 @@
 """Receipt-parsing routes. Neither endpoint persists anything — they return a
 ParseResult for the user to review and confirm via POST /orders.
 
-POST /parse/pdf    multipart "file" -> ParseResult (pdfplumber -> deterministic -> GLM)
+POST /parse/pdf    multipart "file" -> ParseResult (glm-ocr -> glm-4.7-flash)
 POST /parse/image  multipart "file" -> ParseResult (glm-ocr -> glm-4.7-flash)
+
+Both routes require GLM_API_KEY.
 """
 from __future__ import annotations
 
@@ -51,6 +53,12 @@ async def parse_pdf_route(
     file: UploadFile = File(...),
     conn: asyncpg.Connection = Depends(get_conn),
 ) -> ParseResult:
+    if not settings.GLM_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="PDF parsing unavailable: GLM_API_KEY is not configured. "
+            "Use manual entry instead.",
+        )
     data = await file.read()
     if not data:
         raise HTTPException(status_code=400, detail="Empty file.")

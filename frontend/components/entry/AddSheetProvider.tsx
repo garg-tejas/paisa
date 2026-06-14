@@ -42,7 +42,9 @@ export function AddSheetProvider({ children }: { children: ReactNode }) {
 
   const onSaved = useCallback(() => {
     setIsOpen(false);
-    // Pull fresh data into whatever screen is mounted (optimistic close first).
+    // Notify client components (useEffect-based) to re-fetch; router.refresh()
+    // only re-runs server components, not client-side useEffect hooks.
+    window.dispatchEvent(new Event("paisa:saved"));
     router.refresh();
   }, [router]);
 
