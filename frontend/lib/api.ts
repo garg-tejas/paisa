@@ -2,6 +2,7 @@
 // Typed client for the FastAPI backend. One function per route; paths and
 // shapes mirror the backend exactly (app/routers/* + app/schemas.py).
 
+import { clearToken, getToken } from "./auth";
 import type {
   BudgetIn,
   BudgetOut,
@@ -31,15 +32,31 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = getToken();
   const res = await fetch(`${RAW_BASE}${path}`, {
-    // Always talk to the API fresh; the backend is the source of truth.
     cache: "no-store",
     ...init,
     headers: {
       Accept: "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
   });
+
+  if (res.status === 401) {
+    clearToken();
+    // Don't redirect from the login page itself (wrong-password 401 should
+    // stay on the form so the user can see the error).
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+      window.location.href = "/login";
+    }
+    let detail = "Invalid credentials.";
+    try {
+      const body = await res.json();
+      if (body?.detail) detail = typeof body.detail === "string" ? body.detail : detail;
+    } catch { /* ignore */ }
+    throw new ApiError(401, detail);
+  }
 
   if (!res.ok) {
     let detail = `${res.status} ${res.statusText}`;
@@ -65,6 +82,12 @@ function jsonInit(method: string, body: unknown): RequestInit {
     body: JSON.stringify(body),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Auth (public — no token needed)
+// ---------------------------------------------------------------------------
+export const loginApi = (username: string, password: string) =>
+  request<{ token: string }>("/auth/login", jsonInit("POST", { username, password }));
 
 // ---------------------------------------------------------------------------
 // Meta

@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     VAPID_PUBLIC_KEY: str = ""
     VAPID_EMAIL: str = "admin@example.com"
 
+    # Auth: single-user username/password login. JWT_SECRET signs 30-day tokens.
+    # Leave all three blank to disable auth entirely (useful during dev/setup).
+    APP_USERNAME: str = ""
+    APP_PASSWORD: str = ""
+    JWT_SECRET: str = ""
+
     # CORS: comma-separated list of allowed origins, or "*" for all.
     CORS_ORIGINS: str = "*"
 

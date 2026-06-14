@@ -2,9 +2,8 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Hanken_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import { AppShell } from "@/components/AppShell";
+import ClientLayout from "@/components/ClientLayout";
 import { ToastProvider } from "@/components/ui/Toast";
-import { AddSheetProvider } from "@/components/entry/AddSheetProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
 // Display: characterful headings + big spend numbers.
@@ -70,9 +69,7 @@ export default function RootLayout({
     >
       <body>
         <ToastProvider>
-          <AddSheetProvider>
-            <AppShell>{children}</AppShell>
-          </AddSheetProvider>
+          <ClientLayout>{children}</ClientLayout>
         </ToastProvider>
         <ServiceWorkerRegister />
       </body>

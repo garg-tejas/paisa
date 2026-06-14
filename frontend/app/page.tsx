@@ -2,20 +2,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import BudgetHero from "@/components/dashboard/BudgetHero";
 import CategoryBreakdown from "@/components/dashboard/CategoryBreakdown";
 import RecentEntries from "@/components/dashboard/RecentEntries";
 import { Card } from "@/components/ui/Card";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { LogOutIcon } from "@/components/Icons";
 import { getCategorySummary, listOrders } from "@/lib/api";
+import { clearToken } from "@/lib/auth";
 import { currentMonth, daysAgo, isoDate } from "@/lib/format";
 import type { CategoriesSummary, OrderListItem } from "@/lib/types";
 
 export default function HomePage() {
+  const router = useRouter();
   const [summary, setSummary] = useState<CategoriesSummary | null>(null);
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  function handleLogout() {
+    clearToken();
+    router.replace("/login");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +74,13 @@ export default function HomePage() {
           </h1>
           <p className="mt-0.5 text-sm text-[var(--text-dim)]">{monthLabel}</p>
         </div>
+        <button
+          onClick={handleLogout}
+          aria-label="Sign out"
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-[var(--text-dim)] transition-colors active:bg-[var(--surface-2)]"
+        >
+          <LogOutIcon className="h-4 w-4" />
+        </button>
       </header>
 
       {error ? (

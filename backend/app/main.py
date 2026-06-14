@@ -9,13 +9,14 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import scheduler
+from .auth import require_auth
 from .config import settings
 from .db import close_db, init_db
-from .routers import budgets, items, notifications, orders, parse, summary
+from .routers import auth, budgets, items, notifications, orders, parse, summary
 
 logger = logging.getLogger("paisa")
 
@@ -46,18 +47,22 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
-    allow_credentials=False,  # no cookies/auth; wildcard origins are fine
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Routers (each defines its own absolute paths)
-app.include_router(parse.router)
-app.include_router(orders.router)
-app.include_router(items.router)
-app.include_router(summary.router)
-app.include_router(budgets.router)
-app.include_router(notifications.router)
+# Public routes (no token needed)
+app.include_router(auth.router)
+
+# Protected routes — require_auth is a no-op when JWT_SECRET is not configured.
+_auth = [Depends(require_auth)]
+app.include_router(parse.router, dependencies=_auth)
+app.include_router(orders.router, dependencies=_auth)
+app.include_router(items.router, dependencies=_auth)
+app.include_router(summary.router, dependencies=_auth)
+app.include_router(budgets.router, dependencies=_auth)
+app.include_router(notifications.router, dependencies=_auth)
 
 
 @app.get("/health", tags=["meta"])
