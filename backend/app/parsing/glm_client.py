@@ -30,7 +30,7 @@ BASE_URL = "https://api.z.ai/api/paas/v4"
 # OpenAI-compatible endpoint (trailing slash per Z.ai docs) used for structuring.
 OPENAI_BASE_URL = "https://api.z.ai/api/paas/v4/"
 # Text model that coerces raw receipt text into the canonical JSON schema.
-STRUCTURE_MODEL = "glm-4.7-flash"
+STRUCTURE_MODEL = "glm-4.7-flashx"
 _TIMEOUT = httpx.Timeout(120.0, connect=15.0)
 
 # The 8 fixed categories (kept in sync with the canonical contract).
