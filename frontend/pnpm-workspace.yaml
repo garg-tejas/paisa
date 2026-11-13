@@ -1,2 +1,4 @@
 allowBuilds:
-  sharp: set this to true or false
+  sharp: false
+overrides:
+  postcss-selector-parser: 7.1.6

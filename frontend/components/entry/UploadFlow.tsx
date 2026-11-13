@@ -41,7 +41,7 @@ export function UploadFlow({ onSaved }: { onSaved: () => void }) {
       // Poll until the background task finishes (max 2 minutes).
       const deadline = Date.now() + 120_000;
       while (Date.now() < deadline) {
-        await sleep(2500);
+        await sleep(7500);
         const job = await getParseJob(job_id);
         if (job.status === "done") {
           setResult(job.result);

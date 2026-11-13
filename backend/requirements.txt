@@ -13,3 +13,5 @@ cryptography>=42
 # zoneinfo's data source: python:slim ships no system tzdb, so ZoneInfo(
 # "Asia/Kolkata") in scheduler.py would raise ZoneInfoNotFoundError without this.
 tzdata>=2024.1
+# Minimum CA bundle after the October 2026 trust-store incident.
+certifi>=2026.10.19
